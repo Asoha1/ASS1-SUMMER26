@@ -25,10 +25,9 @@ const STORAGE_KEY = "ssp_session_v1";
  * - use regex, not DOM APIs
  */
 function sanitizeUsername(input) {
-  // TODO: implement
-  return "";
-
-  
+  if (typeof input !== 'string') return "user";
+  const sanitized = input.replace(/[^a-zA-Z0-9_-]/g, '_');
+  return sanitized.substring(0, 20);
 }
 
 /**
@@ -41,8 +40,15 @@ function sanitizeUsername(input) {
  */
 function renderNotifications(listEl, notifications) {
   // TODO: implement
+if (!listEl) return;
+  listEl.innerHTML = "";
+  if (!Array.isArray(notifications)) return;
+  notifications.forEach(text => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    listEl.appendChild(li);
+  });
 }
-
 /** -----------------------------
  *  Part B — JSON and parsing
  *  -----------------------------
@@ -63,7 +69,19 @@ function renderNotifications(listEl, notifications) {
  */
 function parseProfileJson(jsonText) {
   // TODO: implement
-  return null;
+  try {
+    const data = JSON.parse(jsonText);
+    if (
+      typeof data.displayName === 'string' &&
+      (data.role === 'user' || data.role === 'admin') &&
+      Array.isArray(data.notifications)
+    ) {
+      return data;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /** -----------------------------
@@ -81,7 +99,14 @@ function parseProfileJson(jsonText) {
  */
 async function fetchUserProfile(url) {
   // TODO: implement
-  return null;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const text = await response.text();
+    return parseProfileJson(text);
+  } catch (e) {
+    return null;
+  }
 }
 
 /** -----------------------------
@@ -99,8 +124,15 @@ async function fetchUserProfile(url) {
  * - Must NOT store notifications (assume those are dynamic)
  */
 function saveSessionToStorage(profile) {
-  // TODO: implement
+  //TODO: implement
+  if (!profile) return;
+  const sessionData = {
+    displayName: profile.displayName,
+    role: profile.role
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
 }
+
 
 /**
  * Load session from localStorage.
@@ -110,7 +142,14 @@ function saveSessionToStorage(profile) {
  */
 function loadSessionFromStorage() {
   // TODO: implement
-  return null;
+ const data = localStorage.getItem(STORAGE_KEY); 
+ if (!data) return null;
+  try {
+    const parsed = JSON.parse(data);
+    return (parsed && parsed.displayName && parsed.role) ? parsed : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /** -----------------------------
@@ -129,6 +168,9 @@ function loadSessionFromStorage() {
  */
 function computeAccessStatus(profile) {
   // TODO: implement
+  if (profile && profile.role === "admin") {
+    return "GRANTED";
+  }
   return "DENIED";
 }
 
